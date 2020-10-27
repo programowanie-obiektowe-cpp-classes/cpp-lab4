@@ -86,6 +86,58 @@ Teraz wykonaj to samo zadanie dla typu `int`.
 W ilu miejscach musiałaś/musiałeś zmodyfikować kod?
 
 ### Specjalizacje szablonów klas
+Jeżeli chcemy, aby nasz szablon zachowywał się w szczególny sposób dla jakiejś grupy parametrów, możemy dodać do niego specjalizację.
+Klasy specjalizujemy wg. następującego schematu:
+```C++
+// Definicja
+template</* parametry */>
+class Klasa { /* ... */ };
+
+// Specjalizacja
+template</* lista parametrów specjalizacji, w szczególności może być pusta */>
+class Klasa</* konkretne typy/wartości/etc. wynikające z parametrów specjalizacji */>
+{ /* ... */ };
+```
+
+Pokażmy to na konkretnym przykładzie:
+```C++
+template <typename T>
+struct S {
+    void print() { puts("Szablon ogólny"); }
+};
+
+template <>
+struct S<double> {
+    void print() { puts("Specjalizacja dla double"); }
+};
+```
+#### Zadanie 6
+Skopiuj powyższy kod i stwórz w funkcji `main` obiekty typu `S<int>` i `S<double>`.
+Zweryfikuj, że metoda `print` działa zgodnie z oczekiwaniami.
+
+Nie musimy jednak specjalizować klas dla konkretnych parametrów.
+Zwróćmy uwagę, że sama specjalizacja także posiada listę parametrów, którą możemy wykorzystać.
+Na przykład:
+```C++
+// Ogólna definicja
+template <typename T>
+struct S { /* ... */ };
+
+// Specjalizacja dla wskaźników
+template <typename T>
+struct S<T*> { /* ... */ };
+
+// Specjalizacja dla referencji
+template <typename T>
+struct S<T&> { /* ... */ };
+```
+Zwróćmy także uwagę, że nie musimy podawać ogólnej definicji szablonu, wystarczy ogólna *deklaracja*.
+Wtedy, gdy spróbujemy zainstancjonować szablon dla parametrów, które nie pasują do żadnej z jego specjalizacji, nasz program się nie skompiluje.
+Jest to swego rodzaju sposób nakładania więzów na szablony (choć niezbyt elegancki, *vide* przypis<sup>1</sup>).
+Możemy także postąpić odwrotnie: deklarując specjalizację bez definicji "wyłączamy" ją.
+
+#### Zadanie 7
+Zadeklaruj specjalizację dla klasy `TablicaPar`, która "wyłączy" puste tablice (czyli klasy `TablicaPar<T, 0>` dla każdego `T`).
 
 ---
 
@@ -98,8 +150,6 @@ Techniki te leżą jednak poza zakresem bieżących zajęć.
 ### Dedukcja typów argumentów
 
 ### Uniwersalne referencje
-
-## Szablony aliasów
 
 ## Wybrane szablony z STL
 
