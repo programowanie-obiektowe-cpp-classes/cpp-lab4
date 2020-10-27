@@ -47,8 +47,8 @@ W języku angielskim mówimy *non-type template parameter*, w dalszej części t
 NTTP mogą być:
 - typy całkowite (`int`, `char`, `bool`, etc.)
 - enumeracje (`enum`)
-- referencją lvalue do obiektu lub funkcji (poza zakresem tej instrukcji)
-- wskaźnikiem do obiektu lub funkcji (poza zakresem tej instrukcji)
+- referencje lvalue do obiektu lub funkcji (poza zakresem tej instrukcji)
+- wskaźniki do obiektu lub funkcji (poza zakresem tej instrukcji)
 - `std::nullptr_t` (poza zakresem tej instrukcji)
 - od C\+\+20 wymagania NTTP zostały poluzowane, dopuszczane są teraz także typy strukturalne i zmiennoprzecinkowe (zdecydowanie poza zakresem tej instrukcji)
 
