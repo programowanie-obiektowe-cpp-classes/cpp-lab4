@@ -131,8 +131,8 @@ struct S<T*> { /* ... */ };
 template <typename T>
 struct S<T&> { /* ... */ };
 ```
-Zwróćmy także uwagę, że nie musimy podawać ogólnej definicji szablonu, wystarczy ogólna *deklaracja*.
-Wtedy, gdy spróbujemy zainstancjonować szablon dla parametrów, które nie pasują do żadnej z jego specjalizacji, nasz program się nie skompiluje.
+Zauważmy też, że nie musimy podawać ogólnej definicji szablonu, wystarczy ogólna *deklaracja*.
+W takim wypadku, gdy spróbujemy zainstancjonować szablon dla parametrów, które nie pasują do żadnej z jego specjalizacji, nasz program się nie skompiluje.
 Jest to swego rodzaju sposób nakładania więzów na szablony (choć niezbyt elegancki, *vide* przypis<sup>1</sup>).
 Możemy także postąpić odwrotnie: deklarując specjalizację bez definicji "wyłączamy" ją.
 
@@ -142,8 +142,8 @@ Zadeklaruj specjalizację dla klasy `TablicaPar`, która "wyłączy" puste tabli
 ---
 
 <sup>1</sup> Nie jest to do końca prawda, istnieją sposoby nakładania więzów na typy, którymi parametryzujemy szablon.
-Zainteresowane osoby odsyłamy do haseł: SFINAE (dawniej), `if constexpr` (C\+\+17) oraz *concepts* (C\+\+20).
-Techniki te leżą jednak poza zakresem bieżących zajęć.
+Zainteresowane osoby odsyłamy do haseł: SFINAE (dawniej), `if constexpr` (C\+\+17) oraz koncepty (*concepts*, C\+\+20).
+Techniki te wykraczają jednak poza zakres bieżących zajęć.
 
 ## Szablony funkcji
 
