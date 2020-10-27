@@ -147,17 +147,26 @@ Techniki te wykraczają jednak poza zakres bieżących zajęć.
 
 ## Szablony funkcji
 
+
 ### Dedukcja typów argumentów
 
 ### Uniwersalne referencje
 
+---
+
+<sup>2</sup> Od C\+\+17 istnieje dedukcja parametrów typu obiektu na podstawie typu argumentów jego konstruktora (CTAD), jednak temat ten wykracza poza zakres bieżącego kursu.
+
 ## Wybrane szablony z STL
+W tej części instrukcji pokażemy działanie kilku podstawowych szablonów biblioteki standardowej.
+Pierwsze 4 dotyczą tzw. *smart pointers*, czyli klas, które pozwalają nam korzystać ze wskaźników
 
 ### `std::unique_ptr`
 
+### `std::make_unique`
+
 ### `std::shared_ptr`
 
-### `std::reference_wrapper`
+### `std::make_shared`
 
 ### `std::variant`
 
