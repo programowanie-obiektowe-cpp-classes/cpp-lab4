@@ -146,9 +146,39 @@ Zainteresowane osoby odsyłamy do haseł: SFINAE (dawniej), `if constexpr` (C\+\
 Techniki te wykraczają jednak poza zakres bieżących zajęć.
 
 ## Szablony funkcji
+Szablony funkcji definiujemy zgodnie z tym samym schematem, co szablony klas.
+Główną różnicę stanowi fakt, że nie możemy ich specjalizować (tę rolę spełnia przeciążanie funkcji) oraz dedukcja typów argumentów<sup>2</sup> (opisana niżej).
+Główną siłą szablonu funkcji jest fakt, że można wykorzystać jego parametry jako typy argumentów (lub wartości zwracanej).
+Możemy zatem napisac w jednym miejscu dowolnie skomplikowaną implementację pewnego algorytmu działającego na argumentach nie konkretnego typu, ale całej *rodziny typów*, spełniającej jakieś minimalne założenia tej implementacji.
+Na przykład, pisząc funkcję
+```C++
+template<typename T>
+T add(const T& a, const T& b)
+{ return a + b; }
+```
+jesteśmy przy jej pomocy w stanie dodać 2 obiekty każdego typu należacego do rodziny typów, dla których zdefiniowany jest operator `+` (zwrcający obiekt tego samego typu co jego argumenty).
+Działa więc ona równie dobrze dla typu `double`, jak dla typu `Wektor2D` z pierwszego laboratorium.
+Jest to swego rodzaju statyczny polimorfizm - mamy wspólny interfejs dla różnych klas.
 
+#### Zadanie 8
+Napisz funkcję `iloczyn`, która przyjmuje tablicę typu, którym jest sparametryzowana oraz liczbę całkowitą będącą rozmiarem tablicy.
+Niech zwraca ona iloczyn elementów tej tablicy, liczony operatorem `*`.
+Zastanów się, jakie założenia czynisz na temat typu tablicy?
 
 ### Dedukcja typów argumentów
+Napisaną powyżej funkcję możemy zawołać np. w następujący sposób:
+```C++
+int tab[]    = {1, 2, 3};
+int silnia_3 = iloczyn<int>(tab, 3);
+```
+W drugiej linijce jawne podanie parametru funkcji `iloczyn` jest niepotrzebne.
+C\+\+ jest statycznie typowany, a zatem podanie `tab` jako argumentu jednoznacznie determinuje parametr, z jakim ma zostać zainstancjonowany szablon.
+
+#### Zadanie 9
+Napisz wolnostojącą funkcję `sumaPary`, która przyjmuje parę (w znaczeniu szablonu `Para` napisanego wyżej) obiektów typu, którym jest sparametryzowana i zwraca ich sumę (użyj metody `suma`).
+Stwórz parę liczb całkowitych i policz ich sumę przy użyciu funkcji `sumaPary`.
+Ile razy musiałaś/musiałeś użyć słowa kluczowego `int`?
+Dzięki dedukcji typów argumentów odpowiedź powinna wynosić 1!
 
 ### Uniwersalne referencje
 
@@ -158,7 +188,9 @@ Techniki te wykraczają jednak poza zakres bieżących zajęć.
 
 ## Wybrane szablony z STL
 W tej części instrukcji pokażemy działanie kilku podstawowych szablonów biblioteki standardowej.
-Pierwsze 4 dotyczą tzw. *smart pointers*, czyli klas, które pozwalają nam korzystać ze wskaźników
+Pierwsze 4 dotyczą tzw. *smart pointers*, czyli klas, które pozwalają nam korzystać ze wskaźników w prostszy i bezpieczniejszy sposób: `std::unique_ptr` i `std::shared_ptr`.
+Istnieje także 3. rodzaj smart pointera - `std::weak_ptr`, lecz zaznajomienie się z nim pozostawiamy dla chętnych.
+Dalej poznamy `std::variant` i `std::visit`, które pozwolą nam drastycznie uprościć kod z zajęć dot. polimorfizmu.
 
 ### `std::unique_ptr`
 
