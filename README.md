@@ -191,6 +191,8 @@ Pierwsze 4 dotyczą tzw. *smart pointers*, czyli klas, które pozwalają nam kor
 Istnieje także 3. rodzaj smart pointera - `std::weak_ptr` - lecz zaznajomienie się z nim pozostawiamy dla chętnych.
 Dalej poznamy `std::variant` i `std::visit`, które pozwolą nam drastycznie uprościć kod z zajęć dotyczących polimorfizmu.
 Dodajmy, że celem tego rozdziału nie jest nauczenie czytelnika każdego niuansu omawianych szablonów (po takowe odsyłamy do dokumentacji), tylko przedstawienie ich filozofii i podstaw użytkowania, tak, aby w przyszłości czytelnik wiedział po jakie rozwiązanie sięgnąć w obliczu konkretnego problemu.
+W tym rozdziale nie zawieramy także zadań dotyczących omawianych szablonów.
+Zamiast tego, po jego przeczytaniu polecamy przystąpić do wykonywania projektu nr 1, do zaliczenia którego potrzebne będzie wykorzystanie szablonów omówionych poniżej.
 
 ### [`std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/unique_ptr)
 Klasa `std::unique_ptr<T>` to smart pointer ("inteligentny wskaźnik") posiadający wyłączną własność nad zasobem typu `T` i niszczy ten zasób w swoim destruktorze (zakres życia zasobu jest ograniczony zakresem życia smart pointera).
@@ -263,11 +265,78 @@ Jest to bardzo logiczne - nie jesteśmy w stanie na podstawie typów argumentów
 Wiele klas może mieć konstruktory, które przyjmują dany zestaw typów!
 
 ### [`std::shared_ptr`](https://en.cppreference.com/w/cpp/memory/shared_ptr)
+Drugim rodzajem smart pointera, który omówimy w niniejszej instrukcji jest `std::shared_ptr`.
+Szablon ten reporezentuje wskaźnik do zasobu, który może być współdzielony.
+Korzystamy z niego podobnie, jak z `std::unique_ptr`, tzn. przy użyciu operatorów `*`, `->` lub `[]`.
+Różnica polega na tym, że nie ma on usuniętego konstruktora kopiującego i kopiującego operatora przypisania.
+Te specjalne metody wykonują tzw. płytką kopię, tzn. nowa kopia obiektu typu `std::shared_ptr<T>` wskazuje na *ten sam* zasób `T`, na który wskazywał obiekt kopiowany.
+Jest to zachowanie identyczne do wbudowanego wskaźnika.
+"Inteligencja" tego wskaźnika polega na tym, że śledzi on liczbę kopii, która zostanie wykonana i zniszczy zasób dopiero wtedy, gdy zniszczona zostanie ostatnia kopia `std::shared_ptr<T>`, która na niego wskazuje.
+Ponownie omijamy więc konieczność wołania `delete`!
+Zobaczmy to na przykładzie następującego programu:
+```C++
+#include <iostream>
+#include <memory>
 
+// Klasa reprezentująca niekopiowalny zasób
+struct NiekopiowalnyZasob
+{
+    int w;
+	
+    NiekopiowalnyZasob(int w_) : w{w_} {}
+	
+    // Kopiowanie usunięte
+    NiekopiowalnyZasob(const NiekopiowalnyZasob&)            = delete;
+    NiekopiowalnyZasob& operator=(const NiekopiowalnyZasob&) = delete;
+	
+	// Przenoszenie i destruktor zdefaultowane dla zgodności z Ro5
+    NiekopiowalnyZasob(NiekopiowalnyZasob&&)                 = default;
+    NiekopiowalnyZasob& operator=(NiekopiowalnyZasob&&)      = default;
+    ~NiekopiowalnyZasob()                                    = default;
+};
+
+int main()
+{
+    // Stworzenie zasobu
+    std::shared_ptr<NiekopiowalnyZasob> wsk1{new NiekopiowalnyZasob{42}};	
+	{
+	    // Kopia WSKAŹNIKA NA zasób
+	    std::shared_ptr<NiekopiowalnyZasob> wsk2{wsk1};
+		
+		std::cout << wsk1->w << '\n';
+		std::cout << wsk2->w << '\n';
+		std::cout << "Adres wsk1: "        << &wsk1  << "\nAdres wsk2: "        << &wsk2  << '\n';
+		std::cout << "Adres zasobu wsk1: " << &*wsk1 << "\nAdres zasobu wsk2: " << &*wsk2 << '\n';
+		
+	} // Tutaj niszczymy wsk2, ale nie zasób, gdyż wsk1 nadal żyje
+	
+} // Tutaj niszczymy wsk1 oraz zasób, gdyż nic już na niego nie wskazuje
+```
+Kompilując i wykonując powyższy kod (lub podglądając [ten link](https://godbolt.org/z/1E5afc)) możemy udowodnić, że `wsk1` i `wsk2` faktycznie wskazują na ten sam obiekt.
+Dla jasności: w tym kontekście `&*wsk` oznacza wzięcie adresu zasobu, na który wskazuje `wsk`, gdyż `*wsk` zwraca referencję do zasobu (wołamy przeciążony operator `*`), a zatem zawołanie operatora `&` na tej referencji zwróci jego adres.
+`&wsk` to po prostu adres obiektu `wsk` (wołamy wbudowany operator wzięcia adresu, tak samo jak robiliśmy to w C dla typów wbudowanych int, double, etc.)
 
 ### [`std::make_shared`](https://en.cppreference.com/w/cpp/memory/shared_ptr/make_shared)
+`std::make_shared` działa dokładnie analogicznie do `std::make_unique` - konstruuje na stercie obiekt przy pomocy podanych argumentów i zwraca `std::shared_ptr`, który na niego wskazuje.
+W efekcie pomaga nam ominąć operator `new` (woła go za nas).
 
 ### Uwagi nt. smart pointerów
+Powyżej omówiliśmy 2 typy inteligentnych wskaźników: `std::unique_ptr` reprezentujący wyłączną własność oraz `std::shared_ptr` reprezentujący własność współdzieloną.
+Jeżeli różnice między nimi nie są w pełni jasne, odsyłamy czytelnika np. do [tego nagrania](https://youtu.be/UOB7-B2MfwA).
+Poprawne ich wykorzystanie pozwala na wyeliminowanie wycieków pamięci poprzez automatyzację (do pewnego stopnia) zarządzania zasobami.
+Dzięki pomocniczym funkcjom `std::make_unique` i `std::make_shared` możemy więc sformułować następującą zasadę programowania:
+
+**Nigdy nie wołaj bezpośrednio operatorów `new` i `delete`**
+
+Znając te narzędzia warto też wiedzieć, kiedy po nie sięgać.
+Temat ten jest omówiony bardzo dokładnie np. [w tym nagraniu](https://youtu.be/JfmTagWcqoE) (jest to półtoragodzinny wykład, także wymieniamy je jako materiał nadprogramowy).
+Decydując po jakie rozwiązanie sięgnąć, powinniśmy kierować się następującą hierarchią:
+1. Preferujemy zarządzanie zasobami bezpośrednio przez lifetime (zakres istnienia) obiektu, tzn. deklarujemy go bezpośrednio jako zmienną lokalną lub pole klasy.
+2. Jeżeli nie jest to możliwe (np. zasób nie mieści się na stosie), tworzymy zasób dynamicznie (`std::make_unique`) i zarządzmy nim przez `std::unique_ptr`.
+3. Po `std::shared_ptr` sięgamy dopiero wtedy, gdy `std::unique_ptr` nie jest wystarczający.
+
+Uwaga: `std::unique_ptr` nadal możemy podawać do funkcji przy pomocy referencji.
+Konieczność korzystania z `std::shared_ptr` objawia się głównie w programach wielowątkowych (zasób współdzielony przez więcej niż jeden wątek, jest automatycznie niszczony gdy wszystkie wątki zakończą pracę) lub w strukturach danych będących grafami (dany wierzchołek może mieć więcej niż jednego rodzica).
 
 ### `std::variant`
 
