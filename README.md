@@ -188,7 +188,7 @@ Dzięki dedukcji typów argumentów odpowiedź powinna wynosić 1!
 ## Wybrane szablony z STL
 W tej części instrukcji pokażemy działanie kilku podstawowych szablonów biblioteki standardowej.
 Pierwsze 4 dotyczą tzw. *smart pointers*, czyli klas, które pozwalają nam korzystać ze wskaźników w prostszy i bezpieczniejszy sposób: `std::unique_ptr` i `std::shared_ptr`.
-Istnieje także 3. rodzaj smart pointera - `std::weak_ptr`, lecz zaznajomienie się z nim pozostawiamy dla chętnych.
+Istnieje także 3. rodzaj smart pointera - `std::weak_ptr` - lecz zaznajomienie się z nim pozostawiamy dla chętnych.
 Dalej poznamy `std::variant` i `std::visit`, które pozwolą nam drastycznie uprościć kod z zajęć dotyczących polimorfizmu.
 Dodajmy, że celem tego rozdziału nie jest nauczenie czytelnika każdego niuansu omawianych szablonów (po takowe odsyłamy do dokumentacji), tylko przedstawienie ich filozofii i podstaw użytkowania, tak, aby w przyszłości czytelnik wiedział po jakie rozwiązanie sięgnąć w obliczu konkretnego problemu.
 
@@ -245,7 +245,7 @@ wsk_baza->metodaWirtualna(); // działa dzięki przeciązeniu operatora ->
 W tym przykładzie widzimy, że `std::unique_ptr<KlasaPochodna>` jest konwertowalny na `std::unique_ptr<KlasaBazowa>`.
 
 ### [`std::make_unique`](https://en.cppreference.com/w/cpp/memory/unique_ptr/make_unique)
-W powyższym przykładzie, mało elegancka mogą wydawać się linijki, w któych tworzymy `std::unique_ptr<PochodnaX>` i przypisujemy je do `wsk_baza`.
+W powyższym przykładzie, mało eleganckie mogą wydawać się linijki, w któych tworzymy `std::unique_ptr<PochodnaX>` i przypisujemy je do `wsk_baza`.
 Szczęśliwie, od standardu C\+\+14, mamy do dyspozycji szablon funkcji `std::make_unique`.
 `std::make_unique<T>(argumenty...)` konstruuje na stercie obiekt typu `T` przy użyciu podanych argumentów<sup>3</sup>, a następnie zwraca `std::unique_ptr<T>` do tego obiektu.
 Efektywnie woła on za nas operator `new`.
