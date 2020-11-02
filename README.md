@@ -147,7 +147,7 @@ Techniki te wykraczają jednak poza zakres bieżących zajęć.
 
 ## Szablony funkcji
 Szablony funkcji definiujemy zgodnie z tym samym schematem, co szablony klas.
-Główną różnicę stanowi fakt, że nie możemy ich specjalizować (tę rolę spełnia przeciążanie funkcji) oraz dedukcja typów argumentów<sup>2</sup> (opisana niżej).
+Główne różnice stanowią fakt, że nie możemy ich specjalizować (tę rolę spełnia przeciążanie funkcji) oraz dedukcja typów argumentów<sup>2</sup> (opisana niżej).
 Główną siłą szablonu funkcji jest fakt, że można wykorzystać jego parametry jako typy argumentów (lub wartości zwracanej).
 Możemy zatem napisac w jednym miejscu dowolnie skomplikowaną implementację pewnego algorytmu działającego na argumentach nie konkretnego typu, ale całej *rodziny typów*, spełniającej jakieś minimalne założenia tej implementacji.
 Na przykład, pisząc funkcję
@@ -156,9 +156,10 @@ template<typename T>
 T add(const T& a, const T& b)
 { return a + b; }
 ```
-jesteśmy przy jej pomocy w stanie dodać 2 obiekty każdego typu należacego do rodziny typów, dla których zdefiniowany jest operator `+` (zwrcający obiekt tego samego typu co jego argumenty).
+jesteśmy przy jej pomocy w stanie dodać 2 obiekty każdego typu należacego do rodziny typów, dla których zdefiniowany jest operator `+` zwrcający obiekt tego samego typu co jego argumenty.
 Działa więc ona równie dobrze dla typu `double`, jak dla typu `Wektor2D` z pierwszego laboratorium.
 Jest to swego rodzaju statyczny polimorfizm - mamy wspólny interfejs dla różnych klas.
+Jeżeli spróbujemy zainstancjonować szablon z typem nie spełniającym naszych założeń, nasz program się nie skompiluje.
 
 #### Zadanie 8
 Napisz funkcję `iloczyn`, która przyjmuje tablicę typu, którym jest sparametryzowana oraz liczbę całkowitą będącą rozmiarem tablicy.
@@ -180,8 +181,6 @@ Stwórz parę liczb całkowitych i policz ich sumę przy użyciu funkcji `sumaPa
 Ile razy musiałaś/musiałeś użyć słowa kluczowego `int`?
 Dzięki dedukcji typów argumentów odpowiedź powinna wynosić 1!
 
-### Uniwersalne referencje
-
 ---
 
 <sup>2</sup> Od C\+\+17 istnieje dedukcja parametrów typu obiektu na podstawie typu argumentów jego konstruktora (CTAD), jednak temat ten wykracza poza zakres bieżącego kursu.
@@ -190,16 +189,89 @@ Dzięki dedukcji typów argumentów odpowiedź powinna wynosić 1!
 W tej części instrukcji pokażemy działanie kilku podstawowych szablonów biblioteki standardowej.
 Pierwsze 4 dotyczą tzw. *smart pointers*, czyli klas, które pozwalają nam korzystać ze wskaźników w prostszy i bezpieczniejszy sposób: `std::unique_ptr` i `std::shared_ptr`.
 Istnieje także 3. rodzaj smart pointera - `std::weak_ptr`, lecz zaznajomienie się z nim pozostawiamy dla chętnych.
-Dalej poznamy `std::variant` i `std::visit`, które pozwolą nam drastycznie uprościć kod z zajęć dot. polimorfizmu.
+Dalej poznamy `std::variant` i `std::visit`, które pozwolą nam drastycznie uprościć kod z zajęć dotyczących polimorfizmu.
+Dodajmy, że celem tego rozdziału nie jest nauczenie czytelnika każdego niuansu omawianych szablonów (po takowe odsyłamy do dokumentacji), tylko przedstawienie ich filozofii i podstaw użytkowania, tak, aby w przyszłości czytelnik wiedział po jakie rozwiązanie sięgnąć w obliczu konkretnego problemu.
 
-### `std::unique_ptr`
+### [`std::unique_ptr`](https://en.cppreference.com/w/cpp/memory/unique_ptr)
+Klasa `std::unique_ptr<T>` to smart pointer ("inteligentny wskaźnik") posiadający wyłączną własność nad zasobem typu `T` i niszczy ten zasób w swoim destruktorze (zakres życia zasobu jest ograniczony zakresem życia smart pointera).
+Wypunktujmy najważniejsze cechy tego szablonu:
+1. Jeden z konstruktorów `std::unique_ptr<T>` przyjmuje obiekt typu `T*` i zarządza zasobem, na który wskazuje podany wskaźnik.
+Od C\+\+14 nie korzystamy z tego konstruktora, lecz zamiast tego z funkcji `std::make_unique<T>`.
+2. `std::unique_ptr` posiada konstruktor domyślny, który tworzy obiekt, który niczym nie zarządza.
+3. `std::unique_ptr` ma usunięty konstruktor kopiujący i kopiujący operator przypisania.
+4. `std::unique_ptr` ma dobrze zdefiniowany konstruktor przenoszący i przenoszący operator przypisania.
+Te dwie metody specjalne "przejmują" zasób, którym zarządzał argument konstruktora/operatora przenoszącego.
+5. `std::unique_ptr` posiada zdefiniowane operatory `*` oraz `->`, które działają analogicznie jak dla zwykłego wskaźnika.
+6. Destruktor `std::unique_ptr` niszczy zasób, którym dany obiekt zarządza.
 
-### `std::make_unique`
+Szablon klasy `std::unique_ptr` także posiada specjalizację dla typów będących tablicami (`std::unique_ptr<T[]>`), która reprezentuje wyłączną własność nad *tablicą* obiektów.
+Działa ona nieco inaczej niż ogólny szablon:
+1. `std::unique_ptr<T[]>` nie ma przeciążonych operatorów `*` i `->`.
+Zamiast nich posiada operator `[]`, który pozwala na indeksowanie po tablicy, którą zarządza.
+2. `std::unique_ptr<T[]>` niszczy trzymane zasoby przy użyciu `delete[]`, a nie `delete` (poprawnie usuwa każdy element tablicy).
 
-### `std::shared_ptr`
+Wymieniowne powyżej cechy pozwalają nam korzystać z obiektów `std::unique_ptr` dokładnie tak samo, jak z wbudowanych wskaźników, nie musimy się za to martwić o zwalnianie pamięci.
+Dodatkowo mamy pewność, że nigdy nie wykonamy nieumyślnej kopii zasobu, ani nie spróbujemy odnieść się do zasobu, który został zniszczony.
+Warto też zaznaczyć, że dynamiczny polimorfizm opisany w instrukcji nr 3 działa w niezmienionej formie dla `std::unique_ptr`!
+W konsekwencji, jeżeli mamy istenijący kod, w którym korzystamy z wbudowanych wskaźników, to możemy zamienić deklarację wszystkich `T*` na `std::unique_ptr<T>` oraz usunąć wszystkie zawołania operatora `delete` (pod warunkiem, że wbudowane wskaźniki reprezentowały wyłączną własność).
+Taka operacja pozwoli nam skrócić kod (nie musimy wołać `delete`) oraz zagwarantuje nam jego poprawność (nigdy nie zapomnimy już zwolnić pamięci, próba kopiowania wskaźników teraz kończy się błędem kompilacji).
+Przyjrzyjmy się, jak może to wyglądać.
+Rozważmy następujący kod:
+```C++
+bool  warunek = sprawdzWarunek();
+Baza* wsk_baza;
 
-### `std::make_shared`
+if (warunek)
+    wsk_baza = new Pochodna1{};
+else
+    wsk_baza = new Pochodna2{};
+
+wsk_baza->metodaWirtualna();
+delete wsk_baza;
+```
+Możemy go przepisać jako:
+```C++
+bool                  warunek = sprawdzWarunek();
+std::unique_ptr<Baza> wsk_baza; // konstruktor domyślny
+
+if (warunek)
+    wsk_baza = std::unique_ptr<Pochodna1>{new Pochodna1{}};
+else
+    wsk_baza = std::unique_ptr<Pochodna2>{new Pochodna2{}};
+	
+wsk_baza->metodaWirtualna(); // działa dzięki przeciązeniu operatora ->
+// nie musimy pamiętać o wołaniu delete, robi to za nas destruktor!
+```
+W tym przykładzie widzimy, że `std::unique_ptr<KlasaPochodna>` jest konwertowalny na `std::unique_ptr<KlasaBazowa>`.
+
+### [`std::make_unique`](https://en.cppreference.com/w/cpp/memory/unique_ptr/make_unique)
+W powyższym przykładzie, mało elegancka mogą wydawać się linijki, w któych tworzymy `std::unique_ptr<PochodnaX>` i przypisujemy je do `wsk_baza`.
+Szczęśliwie, od standardu C\+\+14, mamy do dyspozycji szablon funkcji `std::make_unique`.
+`std::make_unique<T>(argumenty...)` konstruuje na stercie obiekt typu `T` przy użyciu podanych argumentów<sup>3</sup>, a następnie zwraca `std::unique_ptr<T>` do tego obiektu.
+Efektywnie woła on za nas operator `new`.
+W konsekwencji, linijkę
+```C++
+wsk_baza = std::unique_ptr<Pochodna1>{new Pochodna1{}};
+```
+możemy zamienić na
+```C++
+wsk_baza = std::make_unique<Pochodna1>();
+```
+co jest niewątpliwie zwięźlejsze i prostsze w zrozumieniu.
+`std::make_unique` jest jednym z szablonów funkcji, przy użyciu których nie używamy dedukcji typów, lecz zawsze jawnie podajemy parametr szablonu funkcji.
+Jest to bardzo logiczne - nie jesteśmy w stanie na podstawie typów argumentów stwierdzić typu obiektu, którego konstruktor chcemy zawołać.
+Wiele klas może mieć konstruktory, które przyjmują dany zestaw typów!
+
+### [`std::shared_ptr`](https://en.cppreference.com/w/cpp/memory/shared_ptr)
+
+
+### [`std::make_shared`](https://en.cppreference.com/w/cpp/memory/shared_ptr/make_shared)
+
+### Uwagi nt. smart pointerów
 
 ### `std::variant`
 
 ### `std::visit`
+
+<sup>3</sup> Mechanizm, który pozwala definiować szablony dla nieznanej *a priori* liczby parametrów, wykracza poza zakres tego kursu.
+Zainteresowani mogą szukać hasła *variadic templates*.
