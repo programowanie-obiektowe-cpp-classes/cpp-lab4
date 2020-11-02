@@ -187,9 +187,9 @@ Dzięki dedukcji typów argumentów odpowiedź powinna wynosić 1!
 
 ## Wybrane szablony z STL
 W tej części instrukcji pokażemy działanie kilku podstawowych szablonów biblioteki standardowej.
-Pierwsze 4 dotyczą tzw. *smart pointers*, czyli klas, które pozwalają nam korzystać ze wskaźników w prostszy i bezpieczniejszy sposób: `std::unique_ptr` i `std::shared_ptr`.
+Pierwsze 4 dotyczą tzw. *smart pointers*, czyli klas, które pozwalają nam korzystać ze wskaźników w prostszy i bezpieczniejszy sposób: `std::unique_ptr` i `std::shared_ptr` (z nagłówka `memory`).
 Istnieje także 3. rodzaj smart pointera - `std::weak_ptr` - lecz zaznajomienie się z nim pozostawiamy dla chętnych.
-Dalej poznamy `std::variant` i `std::visit`, które pozwolą nam drastycznie uprościć kod z zajęć dotyczących polimorfizmu.
+Dalej poznamy `std::variant`, `std::get` i `std::visit` (z nagłówka `variant`), które pozwolą nam drastycznie uprościć kod z zajęć dotyczących polimorfizmu.
 Dodajmy, że celem tego rozdziału nie jest nauczenie czytelnika każdego niuansu omawianych szablonów (po takowe odsyłamy do dokumentacji), tylko przedstawienie ich filozofii i podstaw użytkowania, tak, aby w przyszłości czytelnik wiedział po jakie rozwiązanie sięgnąć w obliczu konkretnego problemu.
 W tym rozdziale nie zawieramy także zadań dotyczących omawianych szablonów.
 Zamiast tego, po jego przeczytaniu polecamy przystąpić do wykonywania projektu nr 1, do zaliczenia którego potrzebne będzie wykorzystanie szablonów omówionych poniżej.
@@ -324,7 +324,7 @@ W efekcie pomaga nam ominąć operator `new` (woła go za nas).
 Powyżej omówiliśmy 2 typy inteligentnych wskaźników: `std::unique_ptr` reprezentujący wyłączną własność oraz `std::shared_ptr` reprezentujący własność współdzieloną.
 Jeżeli różnice między nimi nie są w pełni jasne, odsyłamy czytelnika np. do [tego nagrania](https://youtu.be/UOB7-B2MfwA).
 Poprawne ich wykorzystanie pozwala na wyeliminowanie wycieków pamięci poprzez automatyzację (do pewnego stopnia) zarządzania zasobami.
-Dzięki pomocniczym funkcjom `std::make_unique` i `std::make_shared` możemy więc sformułować następującą zasadę programowania:
+Dzięki pomocniczym funkcjom `std::make_unique` i `std::make_shared` możemy więc sformułować następującą zasadę programowania w C\+\+:
 
 **Nigdy nie wołaj bezpośrednio operatorów `new` i `delete`**
 
@@ -338,9 +338,74 @@ Decydując po jakie rozwiązanie sięgnąć, powinniśmy kierować się następu
 Uwaga: `std::unique_ptr` nadal możemy podawać do funkcji przy pomocy referencji.
 Konieczność korzystania z `std::shared_ptr` objawia się głównie w programach wielowątkowych (zasób współdzielony przez więcej niż jeden wątek, jest automatycznie niszczony gdy wszystkie wątki zakończą pracę) lub w strukturach danych będących grafami (dany wierzchołek może mieć więcej niż jednego rodzica).
 
-### `std::variant`
+### [`std::variant`](https://en.cppreference.com/w/cpp/utility/variant)
+Cofnijmy się na chwilę do rozważań o dynamicznym polimorfizmie z poprzedniej instrukcji.
+Celem stosowania kombinacji dziedziczenia i metod wirtualnych była praca z obiektem, którego typ był tak jakby zmienny w czasie wykonania programu.
+Mając wskaźnik do klasy bazowej, mogliśmy na podstawie np. wartości wpisanych z klawiatury decydować, na obiekt którego typu pochodnego będzie wskazywał.
+Rozwiązanie to było jednak obarczone następującymi problemami:
+- niepotrzebnie skomplikowany kod
+	- konieczność tworzenia abstrakcyjnych klas bazowych
+	- pamiętanie o pisaniu słowa `virtual`, szczególnie przy destruktorze
+	- design pattern wizytatora jest dość skomplikowany
+	- ogólnie rzecz ujmując, sposób, w jaki chcieliśmy przechowywać/używać obiekty klas silnie ingerował w sposób, w jaki implementowaliśmy ich funkcjonalność.
+	W idealnym świecie chcielibyśmy zawrzeć w definicji klasy jedynie to co robi.
+	To, że chcemy trzymać obiekty danej klasy w heterogenicznym kontenerze razem z obiektami innych klas powinno być zmartwieniem kontenera, nie trzymanych przez niego obiektów.	
+- konieczność dynamicznej alokacji pamięci
+	- koszt w wydajności: sama alokacja jest dość kosztowną operacją
+	- koszt w wydajności: dereferencja wskaźnika nie jest darmową operacją (dostęp do obiektu na stercie jest wolniejszy niż dostęp d obiektu na stosie)
+	- fragmentacja pamięci: dynamiczna alokacja dużej liczby małych obiektów może prowadzić do sytuacji, w której nie mamy dostępnego dużego *ciągłego* obszaru pamięci
+
+Odpowiedzią na te problemy jest wprowadzony w standardzie C\+\+17 szablon `std::variant`.
+Wprowadza on do XXI wieku koncepcję unii typów, znaną jeszcze z C (choć zapewnie nie z kursu informatyki na wydziale MEiL).
+Szablon ten wygląda następująco:
+```C++
+template <typename T1, typename T2,...>
+class variant;
+```
+Instancja klasy `std::variant<T1, T2,...>` w danym momencie trzyma obiekt dokładnie jednego z typów `T1`, `T2`, itd.
+Poniżej będziemy nieformalnie odnosić się do tego ciągu typów jako "paczki typów wariantu".
+Wypunktujmy jego najważniejsze cechy:
+- standard gwarantuje, że sama klasa `std::variant` nigdy nie dokonuje dynamicznej alokacji dodatkowej pamięci
+- obiekt tej klasy jest rozmiaru największego z typów `T1`, `T2`,... plus pewna (mała) stała wartość (np. w kompilatorze `gcc` jest to 8B)
+- posiada konstruktor, który przyjmuje referencję (dobrze zdefiniowany zarówno dla LVR, jak i RVR) do do obiektu klasy należącej do paczki typów wariantu.
+Możemy więc skonstruować np.
+```C++
+std::variant<int, double> v{3.14};
+```
+ale już nie
+```C++
+std::variant<int, float> v{3.14}; // BŁĄD!
+```
+gdyż wartość `3.14` jest typu `double` (a dokładniej `double&&`), konwersja na `float` nie jest tu dopuszczalna.
+Jeżeli chcemy jawnie wymusić typ obiektu, który ma trzymać wariant, możemy użyć 5. przeciążenia konstruktora [z dokumentacji](https://en.cppreference.com/w/cpp/utility/variant/variant).
+- posiada operator przypisania, który działa analogicznie do konstruktora opisanego powyżej.
+Np.:
+```C++
+std::variant<int double> v;
+v = 42;
+```
+- posiada dobrze zdefiniowane konstruktory kopiujące i przenoszące oraz kopiujące i przenoszące operatory przypisania
+- posiada domyślny konstruktor, gdy pierwszy z paczki typów wariantu posiada domyślny konstruktor (wtedy domyślnie konstruuje obiekt `T1`)
+- posiada metodę `size_t index()`, która zwraca indeks (liczony od 0) trzymanego obecnie typu z podanej paczki typów wariantu.
+Np.:
+```C++
+std::variant<int double> v1{42};
+std::variant<int double> v2{42.};
+std::cout << v1.index() << ' ' << v2.index();
+```
+wydrukuje `0 1`.
+Z tej metody nie korzystamy jednak zbyt często (po prostu nie ma takiej potrzeby, nie ze względu na jakieś dobre praktyki).
+- dostęp do obiektu trzymanego przez wariant odbywa się przez `std::get` i `std::visit`, opisane poniżej
+
+### `std::get`<sup>4</sup>
 
 ### `std::visit`
 
+---
+
 <sup>3</sup> Mechanizm, który pozwala definiować szablony dla nieznanej *a priori* liczby parametrów, wykracza poza zakres tego kursu.
 Zainteresowani mogą szukać hasła *variadic templates*.
+
+<sup>4</sup> W bibliotece standardowej są co najmniej 3 różne szablony funkcji `std::get`.
+W tym przypadku mowa o szablonie `std::get(std::variant)`, ale są także `std::get(std::array)` i `std::get(std::tuple)`.
+Służą one jednak do dostępu do klas, które leżą poza zakresem tego kursu (ze względu na ograniczenia czasowe, nie szczególną trudność `std::tuple` czy `std::array`).
