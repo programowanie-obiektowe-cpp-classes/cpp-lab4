@@ -17,6 +17,7 @@ Dalej możemy korzystać ze zdefiniowego szablonu w następujący sposób:
 Dzięki zastosowaniu template'ów możemy zdefiniować ciało danej klasy/funkcji/etc. tylko raz, a następnie instancjonować dany szablon dla dowolnych (zgodnych z deklaracją) parametrów, w zależności od potrzeby.
 Podkreślmy, że klasą/funkcją/etc. jest dopiero instancja szablonu, nie sam szablon.
 Proces instancjonowania template'ów odbywa się w czasie kompilacji, także możemy mieć pewność, że wykorzystanie tej funkcjonalności języka nie pociąga za sobą żadnego kosztu w wydajności programu.
+Pełne wprowadzenie do tego tematu czytelnik może znaleźć np. [tutaj](https://youtu.be/LMP_sxOaz6g).
 
 ## Rodzaje parametrów szablonów
 Zanim napiszemy pierwszy szablon, powiedzmy, jakie może on w ogóle mieć rodzaje parametrów.
