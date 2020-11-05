@@ -147,8 +147,8 @@ Techniki te wykraczają jednak poza zakres bieżących zajęć.
 
 ## Szablony funkcji
 Szablony funkcji definiujemy zgodnie z tym samym schematem, co szablony klas.
-Główne różnice stanowią fakt, że nie możemy ich specjalizować (tę rolę spełnia przeciążanie funkcji) oraz dedukcja typów argumentów<sup>2</sup> (opisana niżej).
-Główną siłą szablonu funkcji jest fakt, że można wykorzystać jego parametry jako typy argumentów (lub wartości zwracanej).
+Główną różnicę stanowi możliwość dedukcji typów argumentów<sup>2</sup> (opisana niżej).
+Siłą szablonu funkcji jest fakt, że można wykorzystać jego parametry jako typy argumentów (lub wartości zwracanej).
 Możemy zatem napisac w jednym miejscu dowolnie skomplikowaną implementację pewnego algorytmu działającego na argumentach nie konkretnego typu, ale całej *rodziny typów*, spełniającej jakieś minimalne założenia tej implementacji.
 Na przykład, pisząc funkcję
 ```C++
@@ -352,10 +352,10 @@ Rozwiązanie to było jednak obarczone następującymi problemami:
 	To, że chcemy trzymać obiekty danej klasy w heterogenicznym kontenerze razem z obiektami innych klas powinno być zmartwieniem kontenera, nie trzymanych przez niego obiektów.	
 - konieczność dynamicznej alokacji pamięci
 	- koszt w wydajności: sama alokacja jest dość kosztowną operacją
-	- koszt w wydajności: dereferencja wskaźnika nie jest darmową operacją (dostęp do obiektu na stercie jest wolniejszy niż dostęp d obiektu na stosie)
+	- koszt w wydajności: dereferencja wskaźnika nie jest darmową operacją (dostęp do obiektu na stercie jest wolniejszy niż dostęp do obiektu na stosie)
 	- fragmentacja pamięci: dynamiczna alokacja dużej liczby małych obiektów może prowadzić do sytuacji, w której nie mamy dostępnego dużego *ciągłego* obszaru pamięci
 
-Odpowiedzią na te problemy jest wprowadzony w standardzie C\+\+17 szablon `std::variant`.
+Odpowiedzią na te problemy jest dodany w standardzie C\+\+17 szablon `std::variant`.
 Wprowadza on do XXI wieku koncepcję unii typów, znaną jeszcze z C (choć zapewnie nie z kursu informatyki na wydziale MEiL).
 Szablon ten wygląda następująco:
 ```C++
@@ -398,8 +398,200 @@ Z tej metody nie korzystamy jednak zbyt często (po prostu nie ma takiej potrzeb
 - dostęp do obiektu trzymanego przez wariant odbywa się przez `std::get` i `std::visit`, opisane poniżej
 
 ### `std::get`<sup>4</sup>
+Mamy dany obiekt typu `std::variant<T1, T2,...> v`, który wiemy, że trzyma w danej chwili obiekt typu `T2`.
+Możemy uzyskać dostęp do tego obiektu dostęp na 2 różne sposoby:
+- za pomocą indeksu
+```C++
+T2& wartosc = std::get<1>(v);
+```
+- za pomocą typu (działa jedynie gdy `T2` występuje w paczce typów wariantu dokładnie raz)
+```C++
+T2& wartosc = std::get<T2>(v);
+```
+Jeżeli `v` nie trzymałby w danej chwili wartości typu `T2`, operacja rzuci wyjątek.
+O wyjątkach dowiemy się więcej na późniejszym laboratorium, na chwilę obecną powiedzmy jedynie, że próba dostępu do wartości trzymanej przez wariant przez niepoprawny typ spowoduje zakończenie pracy naszego programu w trybie awaryjnym.
+Dodajmy też, że `std::get` zwraca *referencję* do trzymanego obiektu, także nie musimy wykonywać jego kopii.
+Jeżeli chcielibyśmy to zrobić, możemy oczywiście zawołać po prostu:
+```C++
+T2 kopia_wartosci = std::get<1>(v); // 
+```
 
-### `std::visit`
+### [`std::visit`](https://en.cppreference.com/w/cpp/utility/variant/visit)
+Poznana dotychczas funkcjonalność pozwala nam na napisanie wizytatora wariantu (spokojnie, jest to dużo prostsze niż w przypadku wirtualnego polimorfizmu).
+Jeżeli mamy wariant sparametryzowany paczką `T1`, `T2`,... i wiemy, że każdy z typów należących do tej paczki ma metodę `drukuj`, możemy napisać następującą funkcję:
+```C++
+void drukujWariant(const std::variant<T1, T2,...>& v)
+{
+    if (v.index() == 0)
+        std::get<0>(v).drukuj();
+    else if (v.index() == 1)
+        std::get<1>(v).drukuj();
+    // itd ...
+}
+```
+Funkcja ta jest bardzo konkretnym wizytatorem, który woła metodę `drukuj` obiektu trzymanego przez wariant.
+Podobnie jak w przypadku wirtualnego polimorfizmu, chcielibyśmy teraz uogólnić ideę wizytowania, tzn. stworzyć uniwersalny mechanizm, przy użyciu którego możliwe jest zawołanie dowolnej zdefiniowanej przez siebie funkcji, która obsłuży w odpowiedni sposób różne możliwe obiekty trzymane przez wariant (spoiler alert: taki mechanizm dostarcza biblioteka standardowa, spróbujemy jednak najpierw stworzyć go sami aby zrozumieć, jak działa).
+Tutaj ujawni się esencja wygody (tak, wygody, nie skomplikowania), którą mogą zapewnić nam template'y.
+
+Zanim przejdziemy do przypadku wariantu, zastanówmy się nad zagadnieniem przekazywania funkcji jako argumentów innych funkcji.
+W języku C służyły do tego wskaźniki do funkcji, które były jednak niewygodne oraz cechowały się dość mało intuicyjną składnią.
+Aby zobaczyć, jak rozwiązujemy to zagadnienie w C\+\+, pochylmy się nad następującym przykładem.
+Chcielibyśmy napisać szablon funkcji, która przyjmie argument "wołalny" (ang. *callable*) oraz drugi argument dowolnego typu, a następnie podaje drugi argument do wywołania pierwszego argumentu.
+Mówiąc prościej, chcielibyśmy przyjąć obiekt funkcjo-podobny oraz jego argument i wywołać tę (tak jakby) funkcję z tym argumentem.
+Dzięki template'om, możemy w trywialny sposób zapisać taką abstrakcję:
+```C++
+template<typename Fun_t, typename Arg_t>
+void zawolaj(Fun_t fun, Arg_t arg)
+{
+    fun(arg);
+}
+```
+Pomijamy rozważania dotyczące przyjmowania argumentów jako referencje i wykonywania kopii, gdyż nie to jest tutaj istotne.
+Mając taki szablon, możemy teraz napisać:
+```C++
+void drukuj(int i) { std::cout << "int: " << i << '\n'; }
+
+int main()
+{
+    zawolaj(drukuj, 1);
+}
+```
+Dzięki dedukcji typów nie musimy się przejmować, czym jest tak naprawdę `drukuj` podany jako argument do `zawolaj`.
+Maszyneria template'ów martwi się o to za nas, a my możemy spędzić nasz czas na rzeczach bardziej produktywnych niż przypominanie sobie składni wskaźników do funkcji z języka C (bo to właśnie ta funkcjonalność jest przez nas wykorzystana w powyższym przykładzie).
+Kłopoty pojawią się, gdy funkcja `drukuj` będzie miała więcej niż jedno przeciążenie.
+Nie będzie wtedy jednoznaczne, które znich ma zostać podane do funkcji (czytelnik może sprawdzić to samodzielnie).
+Zamiast tego, możemy podać *obiekt*, który posiada przeciążenia operatora nawiasów okrągłych dla wszystkich potrzebnych typów.
+Konkretnie:
+```C++
+struct Drukarka
+{
+    void operator()(int i)    { std::cout << "int: " << i << '\n'; }
+    void operator()(double d) { std::cout << "double: " << d << '\n'; }
+};
+```
+Teraz możemy zawołać:
+```C++
+Drukarka d;
+zawolaj(d, 42);
+zawolaj(d, 1.);
+
+// Lub zwięźlej:
+// zawolaj(Drukarka{}, 42);
+// zawolaj(Drukarka{}, 1.);
+```
+Idea reprezentacji operacji przez obiekty ze zdefiniowanym operatorem `()` (tzw. obiekty funkcyjne lub funktory) zostanie rozwinięta na laboratorium dotyczącym algorytmów STL, powróćmy teraz jednak do wizytacji wariantu.
+
+Wykorzystując opisany wyżej chwyt, możemy napisać szablon ogólnego wizytatora konkretnego wariantu `std::variant<int, double>` (ponownie pomijamy rozważania nt. referencji i kopiowania):
+```C++
+template <typename Wizytator_t>
+void wizytuj(Wizytator_t wizytator, std::variant<int, double> wariant)
+{
+    unsigned int index = wariant.index();
+	if      (index == 0)
+        wizytator(std::get<0>(wariant));
+    else if (index == 1)
+        wizytator(std::get<1>(wariant));
+}
+```
+Podkreślmy, że próba ominięcia drzewa decyzyjnego skończy się błędem kompilacji
+```C++
+wizytator(std::get<wariant.index()>(wariant)); // Błąd!!!
+```
+gdyż argumenty template'ów muszą zostać określone w czasie kompilacji, a operacja `wariant.index()` jest z natury rzeczy sprawdzana w czasie wykonania programu.
+Zobaczmy jak możemy wykorzystać ten szablon:
+```C++
+std::variant<int, double> v{1.};
+wizytuj(Drukarka{}, v);
+// wydrukuje "double: 1"
+
+v = 42;
+wizytuj(Drukarka{}, v);
+// wydrukuje "int: 42"
+```
+Jeżeli zdefiniujemy inny obiekt funkcyjny, możemy postąpić zgodnie z tym samym schematem!
+Mamy więc ogólną metodę dostępu do wariantu `std::variant<double, int>`.
+
+Ogólną metodę dostępu do dowolnego wariantu zapewnia nam szablon funkcji `std::visit`.
+Jest on sparametryzowany nie tylko typem funktora, ale także typem samego wariantu.
+Dzięki temu możemy w sposób analogiczny do tego zobrazowanego wyżej wizytować obiekt każdej klasy stworzonej przez zainstancjonowanie szablonu `std::variant`.
+Możemy więc przepisać kod z przykładu jako:
+```C++
+std::variant<int, double> v{1.};
+std::visit(Drukarka{}, v);
+// wydrukuje "double: 1"
+
+v = 42;
+std::visit(Drukarka{}, v);
+// wydrukuje "int: 42"
+```
+Ponownie widzimy, że nawet tak skomplikowana funkcjonalność jak `std::visit` (pod maską ma ona dużo meta-programowania) może być przez nas wykorzystana w prosty sposób, a wszystko dzięki dedukcji parametrów z typów argumentów oraz bibliotece standardowej.
+
+### Podsumowanie `std::variant`
+- `std::variant` daje nam możliwość trzymania różnych typów w jednym obiekcie
+- dzięki przyjaznemu interfejsowi możemy nadawać wariantowi wartości w naturalny sposób (operator przypisania, konstruktor)
+- dostęp do trzymanego obiektu uzyskujemy używając pomocniczego szablonu funkcji `std::visit`
+- dzięki wariantowi możemy w naturalny sposób definiować nasze klasy polimorficzne - omijamy dziedziczenie i słowo `virtual`
+
+Na koniec zobaczmy, jak przepisać wizytator kształtów z poprzedniego laboratorium.
+
+```C++
+#include <iostream>
+#include <string>
+#include <variant>
+
+// Uproszczona klasa koło
+class Kolo
+{
+public:
+    Kolo() : r{0} {}
+    Kolo(double r_) : r{r_} {}
+    void id() { std::cout << "Jestem kołem o polu " << 3.14 * r * r << '\n'; };
+	
+private:
+    double r;
+};
+
+// Uproszczona klasa kwadrat
+class Kwadrat
+{
+public:
+    Kwadrat() : a{0} {}
+    Kwadrat(double a_) : a{a_} {}
+    void id() { std::cout << "Jestem kwadratem o polu " << a * a << '\n'; }
+	
+private:
+    double a;
+};
+
+// Wizytujący funktor, pokażemy jak ominąć jego definicję na lab 6
+struct WizytatorKsztaltu
+{
+    void operator()(Kolo k)    { k.id(); }
+    void operator()(Kwadrat k) { k.id(); }
+};
+
+int main()
+{
+    std::variant<Kwadrat, Kolo> v;
+	
+    std::string s;
+    std::cin >> s;
+    double d;
+    std::cin >> d;
+	
+    if (s == "kwadrat")
+        v = Kwadrat{d};
+    else if (s == "kolo")
+        v = Kolo{d};
+    else
+    {
+        std::cout << "Nie rozpoznano kształtu\n";
+        return 1; // wartość inna niż 0 oznacza błąd programu
+    }
+	
+	std::visit(WizytatorKsztaltu{}, v);
+}
+```
 
 ---
 
@@ -408,4 +600,4 @@ Zainteresowani mogą szukać hasła *variadic templates*.
 
 <sup>4</sup> W bibliotece standardowej są co najmniej 3 różne szablony funkcji `std::get`.
 W tym przypadku mowa o szablonie `std::get(std::variant)`, ale są także `std::get(std::array)` i `std::get(std::tuple)`.
-Służą one jednak do dostępu do klas, które leżą poza zakresem tego kursu (ze względu na ograniczenia czasowe, nie szczególną trudność `std::tuple` czy `std::array`).
+Służą one jednak do dostępu do klas, które leżą poza zakresem tego kursu (ze względu na ograniczenia czasowe, nie wysoki stopień zaawansowania `std::tuple` i `std::array`).
