@@ -589,7 +589,7 @@ int main()
         return 1; // wartość inna niż 0 oznacza błąd programu
     }
 	
-	std::visit(WizytatorKsztaltu{}, v);
+    std::visit(WizytatorKsztaltu{}, v);
 }
 ```
 
