@@ -487,7 +487,7 @@ template <typename Wizytator_t>
 void wizytuj(Wizytator_t wizytator, std::variant<int, double> wariant)
 {
     unsigned int index = wariant.index();
-	if      (index == 0)
+    if      (index == 0)
         wizytator(std::get<0>(wariant));
     else if (index == 1)
         wizytator(std::get<1>(wariant));
