@@ -398,7 +398,7 @@ wydrukuje `0 1`.
 Z tej metody nie korzystamy jednak zbyt często (po prostu nie ma takiej potrzeby, nie ze względu na jakieś dobre praktyki).
 - dostęp do obiektu trzymanego przez wariant odbywa się przez `std::get` i `std::visit`, opisane poniżej
 
-### `std::get`<sup>4</sup>
+### [`std::get`](https://en.cppreference.com/w/cpp/utility/variant/get)<sup>4</sup>
 Mamy dany obiekt typu `std::variant<T1, T2,...> v`, który wiemy, że trzyma w danej chwili obiekt typu `T2`.
 Możemy uzyskać dostęp do tego obiektu dostęp na 2 różne sposoby:
 - za pomocą indeksu
@@ -596,9 +596,9 @@ int main()
 
 ---
 
-<sup>3</sup> Mechanizm, który pozwala definiować szablony dla nieznanej *a priori* liczby parametrów, wykracza poza zakres tego kursu.
+<sup>3</sup> Mechanizm, który pozwala definiować szablony dla nieznanej *a priori* liczby parametrów wykracza poza zakres tego kursu.
 Zainteresowani mogą szukać hasła *variadic templates*.
 
 <sup>4</sup> W bibliotece standardowej są co najmniej 3 różne szablony funkcji `std::get`.
 W tym przypadku mowa o szablonie `std::get(std::variant)`, ale są także `std::get(std::array)` i `std::get(std::tuple)`.
-Służą one jednak do dostępu do klas, które leżą poza zakresem tego kursu (ze względu na ograniczenia czasowe, nie wysoki stopień zaawansowania `std::tuple` i `std::array`).
+Służą one jednak do dostępu do klas, które leżą poza zakresem tego kursu (ze względu na ograniczenia czasowe, nie wysoki stopień skomplikowania `std::tuple` i `std::array`).
