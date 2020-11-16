@@ -327,7 +327,7 @@ Jeżeli różnice między nimi nie są w pełni jasne, odsyłamy czytelnika np. 
 Poprawne ich wykorzystanie pozwala na wyeliminowanie wycieków pamięci poprzez automatyzację (do pewnego stopnia) zarządzania zasobami.
 Dzięki pomocniczym funkcjom `std::make_unique` i `std::make_shared` możemy więc sformułować następującą zasadę programowania w C\+\+:
 
-**Nigdy nie wołaj bezpośrednio operatorów `new` i `delete`**
+*Nigdy nie wołaj bezpośrednio operatorów `new` i `delete`*
 
 Znając te narzędzia warto też wiedzieć, kiedy po nie sięgać.
 Temat ten jest omówiony bardzo dokładnie np. [w tym nagraniu](https://youtu.be/JfmTagWcqoE) (jest to półtoragodzinny wykład, także wymieniamy je jako materiał nadprogramowy).
