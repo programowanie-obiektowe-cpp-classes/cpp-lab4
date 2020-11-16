@@ -160,7 +160,7 @@ T add(const T& a, const T& b)
 jesteśmy przy jej pomocy w stanie dodać 2 obiekty każdego typu należacego do rodziny typów, dla których zdefiniowany jest operator `+` zwrcający obiekt tego samego typu co jego argumenty.
 Działa więc ona równie dobrze dla typu `double`, jak dla typu `Wektor2D` z pierwszego laboratorium.
 Jest to swego rodzaju statyczny polimorfizm - mamy wspólny interfejs dla różnych klas.
-Jeżeli spróbujemy zainstancjonować szablon z typem nie spełniającym naszych założeń, nasz program się nie skompiluje.
+Jeżeli spróbujemy zainstancjonować szablon z typem niespełniającym naszych założeń, nasz program się nie skompiluje.
 
 #### Zadanie 8
 Napisz funkcję `iloczyn`, która przyjmuje tablicę typu, którym jest sparametryzowana oraz liczbę całkowitą będącą rozmiarem tablicy.
