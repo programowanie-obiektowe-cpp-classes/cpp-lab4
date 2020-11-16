@@ -1,2 +1,0 @@
-# Zaliczenie Laboratorium IV
-WIP
